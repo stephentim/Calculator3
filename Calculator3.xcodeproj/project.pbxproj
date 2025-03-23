@@ -195,6 +195,9 @@
 			);
 			mainGroup = CD0A89AC2D8C9D2300CF73AA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CDDE622E2D8D1361004AA86E /* XCRemoteSwiftPackageReference "Expression" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CD0A89B62D8C9D2300CF73AA /* Products */;
 			projectDirPath = "";
@@ -591,6 +594,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CDDE622E2D8D1361004AA86E /* XCRemoteSwiftPackageReference "Expression" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/nicklockwood/Expression";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.13.9;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = CD0A89AD2D8C9D2300CF73AA /* Project object */;
 }
