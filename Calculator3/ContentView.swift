@@ -72,7 +72,7 @@ struct ContentView: View {
     @State private var alertMessage = ""
     
     let buttons: [[String]] = [
-        ["C", "(", ")", "⌫", "÷"], // 修改第一行按钮
+        ["C", "(", ")", "⌫", "÷"],
         ["7", "8", "9", "×"],
         ["4", "5", "6", "-"],
         ["1", "2", "3", "+"],
@@ -141,7 +141,7 @@ struct ContentView: View {
             let formattedResult = formatNumber(result)
             
             let newEntry = HistoryEntry(
-                expression: expression,
+                expression: display,
                 result: formattedResult,
                 timestamp: Date()
             )
@@ -417,7 +417,8 @@ struct CalculatorButton: View {
 
     private var backgroundColor: Color {
         switch title {
-        case "C", "(", ")": return .gray
+        case "C", "(", ")", "⌫": return Color(.lightGray)
+        case ".": return .gray
         case "÷", "×", "-", "+", "=": return .orange
         default: return Color(.darkGray)
         }
