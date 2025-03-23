@@ -13,5 +13,6 @@ struct Calculator3App: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: HistoryEntry.self) // 启用自动保存
     }
 }

@@ -4,7 +4,10 @@
 //
 //  Created by Stephen Tim on 2025/3/21.
 //
+// 博学堂计算器3.0
 
+
+import SwiftData
 import SwiftUI
 
 // 日期分组结构体
@@ -22,14 +25,20 @@ struct HistoryGroup: Identifiable {
     }
 }
 
-// 历史记录结构体
-struct HistoryEntry: Identifiable {
-    let id = UUID()
-    let expression: String
-    let result: String
-    let timestamp: Date
-    var memo: String = "" // 新增备注字段
-
+@Model
+// 历史记录
+final class HistoryEntry {
+    var expression: String
+    var result: String
+    var memo: String = ""
+    var timestamp: Date
+    
+    init(expression: String, result: String, timestamp: Date) {
+        self.expression = expression
+        self.result = result
+        self.timestamp = timestamp
+    }
+    
     var formattedTime: String {
         let timeFormatter = DateFormatter()
         timeFormatter.timeStyle = .medium
@@ -45,7 +54,6 @@ struct HistoryEntry: Identifiable {
     var description: String {
         return "\(expression) = \(result) "
     }
-
     var fullDescription: String {
         let memoText = memo.isEmpty ? "" : "\n备注：\(memo)"
         return "\(expression) = \(result) (\(formattedDateTime)) \(memoText)"
@@ -53,21 +61,16 @@ struct HistoryEntry: Identifiable {
 }
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \HistoryEntry.timestamp, order: .reverse) private var history: [HistoryEntry]
+    
     @State private var display = ""
-    @State private var history: [HistoryEntry] = []
     @State private var showingMemoInput = false
     @State private var selectedEntry: HistoryEntry?
     @State private var newMemoText = ""
     @State private var showingAlert = false
     @State private var alertMessage = ""
     
-    //    let buttons1: [[String]] = [
-    //        ["C", "(", ")", "÷"],
-    //        ["7", "8", "9", "×"],
-    //        ["4", "5", "6", "-"],
-    //        ["1", "2", "3", "+"],
-    //        ["0", ".", "="]
-    //    ]
     let buttons: [[String]] = [
         ["C", "(", ")", "⌫", "÷"], // 修改第一行按钮
         ["7", "8", "9", "×"],
@@ -78,23 +81,11 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            // 历史记录和显示区域
+            // 历史记录
             historyList
+            // 显示屏
             displayView
-            
-            // 按钮布局
-            //            ForEach(buttons, id: \.self) { row in
-            //                HStack(spacing: 12) {
-            //                    ForEach(row, id: \.self) { button in
-            //                        CalculatorButton(
-            //                            title: button,
-            //                            action: { handleButtonPress(button) },
-            //                            isWide: button == "0"
-            //                        )
-            //                    }
-            //                }
-            //            }
-            
+            // 按钮
             ForEach(buttons, id: \.self) { row in
                 DynamicButtonRow(row: row) { button in
                     handleButtonPress(button)
@@ -149,11 +140,20 @@ struct ContentView: View {
             let result = try evaluateExpression(expression)
             let formattedResult = formatNumber(result)
             
-            history.append(HistoryEntry(
-                expression: display,
+            let newEntry = HistoryEntry(
+                expression: expression,
                 result: formattedResult,
                 timestamp: Date()
-            ))
+            )
+            modelContext.insert(newEntry)
+            
+            // 自动清理旧记录（保留最近100条）
+            if history.count > 100 {
+                let oldEntries = history.suffix(history.count - 100)
+                for entry in oldEntries {
+                    modelContext.delete(entry)
+                }
+            }
             
             display = formattedResult
         } catch {
@@ -306,10 +306,11 @@ extension ContentView {
         }
     }
     
-    // 分组计算属性
+    // 日期分组 计算属性 逻辑
     private var groupedHistory: [HistoryGroup] {
+        let calendar = Calendar.current
         let grouped = Dictionary(grouping: history) { entry in
-            Calendar.current.startOfDay(for: entry.timestamp)
+            calendar.startOfDay(for: entry.timestamp)
         }
         
         return grouped.map { key, value in
@@ -327,7 +328,7 @@ extension ContentView {
                 
                 Spacer()
             }
-            .navigationTitle("添加备注")
+            .navigationTitle("备注")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -345,15 +346,21 @@ extension ContentView {
                 }
             }
         }
-    }
-    
-    // 删除方法
-    private func deleteHistoryEntry(_ entry: HistoryEntry) {
-        if let index = history.firstIndex(where: { $0.id == entry.id }) {
-            history.remove(at: index)
+        .onDisappear {
+            // 自动保存修改
+            do {
+                try modelContext.save()
+            } catch {
+                print("保存备注失败：\(error)")
+            }
         }
     }
-    
+
+    // 删除方法
+    private func deleteHistoryEntry(_ entry: HistoryEntry) {
+        modelContext.delete(entry)
+    }
+
     // 历史记录条目视图
     private func historyRow(entry: HistoryEntry) -> some View {
         VStack(alignment: .leading) {
@@ -371,7 +378,7 @@ extension ContentView {
         }
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading) // 对齐修饰符
-        .contentShape(Rectangle()) // 扩大点击区域
+        .contentShape(Rectangle())                       // 扩大点击区域
     }
 }
 
@@ -402,6 +409,7 @@ struct CalculatorButton: View {
         }
         return 70
     }
+    
     // 动态字体大小
     private var fontSize: Font {
         isSmall ? .system(size: 22) : .system(size: 28)
